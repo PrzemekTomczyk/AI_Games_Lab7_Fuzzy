@@ -7,6 +7,7 @@
 /// </summary>
 #include <SFML/Graphics.hpp>
 #include <random>
+#include "Fuzzy.h"
 
 class Game
 {
@@ -38,6 +39,7 @@ private:
 	void setupSprite(std::vector<sf::Sprite>& t_container, EntityType t_type);
 	int randomNum(int t_min, int t_max);
 	void allyLayout();
+	int rollEnemyForces();
 
 	sf::RenderWindow m_window; // main SFML window
 	sf::Font m_ArialBlackfont; // font used
@@ -51,6 +53,16 @@ private:
 	std::vector<sf::Sprite> m_enemySprites;
 
 	bool m_exitGame; // control exiting game
+
+	double m_tiny;
+	double m_small;
+	double m_moderate;
+	double m_large;
+
+	double m_close;
+	double m_medium;
+	double m_far;
+
 };
 
 #endif // !GAME_HPP

@@ -88,15 +88,9 @@ void Game::processKeys(sf::Event t_event)
 	else if (sf::Keyboard::Space == t_event.key.code)
 	{
 		m_allySprites.clear();
-		m_enemySprites.clear();
 
-		int enemyCount = randomNum(100, 500);
-		int allyCount = randomNum(100, 500);
-		for (size_t i = 0; i < enemyCount; i++)
-		{
-			setupSprite(m_enemySprites, EntityType::Enemy);
-		}
-		for (size_t i = 0; i < 68; i++)
+		int allyCount = rollEnemyForces();
+		for (size_t i = 0; i < allyCount; i++)
 		{
 			setupSprite(m_allySprites, EntityType::Ally);
 		}
@@ -200,10 +194,10 @@ void Game::setupSprite(std::vector<sf::Sprite>& t_container, EntityType t_type)
 
 	sf::Sprite sprite;
 	sprite.setTexture(*texture);
-	sprite.setScale(0.1f, 0.1f);
 
 	if (t_type == EntityType::Enemy)
 	{
+		sprite.setScale(0.075f, 0.075f);
 		sf::Vector2f pos;
 		pos.x = randomNum(sprite.getGlobalBounds().width, m_window.getSize().x - sprite.getGlobalBounds().width);
 		pos.y = randomNum(sprite.getGlobalBounds().height, (m_window.getSize().y / 3.0f) - sprite.getGlobalBounds().height);
@@ -213,6 +207,7 @@ void Game::setupSprite(std::vector<sf::Sprite>& t_container, EntityType t_type)
 	}
 	else if (t_type == EntityType::Ally)
 	{
+		sprite.setScale(0.1f, 0.1f);
 		sprite.setOrigin(sprite.getGlobalBounds().width / 2.0f, sprite.getGlobalBounds().height / 2.0f);
 		t_container.push_back(sprite);
 	}
@@ -272,4 +267,85 @@ void Game::allyLayout()
 
 		rowCount++;
 	}
+}
+
+int Game::rollEnemyForces()
+{
+	int enemyForce = randomNum(1, 30);
+	int enemyDist = randomNum(0, 70);
+	system("CLS");
+	std::cout << "########################" << std::endl;
+	std::cout << "\tEnemy Intel!" << std::endl;
+	std::cout << "Enemy units:\t" << enemyForce << std::endl;
+	std::cout << "Enemy klicks:\t" << enemyDist << std::endl;
+
+	m_enemySprites.clear();
+
+	for (size_t i = 0; i < enemyForce; i++)
+	{
+		setupSprite(m_enemySprites, EntityType::Enemy);
+		float scale = m_enemySprites[i].getScale().x * enemyDist / 70;
+		if (scale < 0.025)
+		{
+			scale = 0.025f;
+		}
+		m_enemySprites[i].setScale(scale, scale);
+	}
+
+	std::cout << "########################" << std::endl;
+	std::cout << "\tFuzzy forces" << std::endl;
+	m_tiny = FuzzyLogic::Triangle(enemyForce, -10, 0, 10);
+	std::cout << "Tiny:\t" << m_tiny << std::endl;
+	m_small = FuzzyLogic::Trapezoid(enemyForce, 2.5, 10, 15, 20);
+	std::cout << "Smol:\t" << m_small << std::endl;
+	m_moderate = FuzzyLogic::Trapezoid(enemyForce, 15, 20, 25, 30);
+	std::cout << "Mod:\t" << m_moderate << std::endl;
+	m_large = FuzzyLogic::Grade(enemyForce, 25, 30);
+	std::cout << "Large:\t" << m_large << std::endl;
+
+	std::cout << "########################" << std::endl;
+	std::cout << "\tFuzzy ranges" << std::endl;
+	m_close = FuzzyLogic::Triangle(enemyDist, -30, 0, 30);
+	std::cout << "Close:\t" << m_close << std::endl;
+	m_medium = FuzzyLogic::Trapezoid(enemyDist, 10, 30, 50, 70);
+	std::cout << "Medium:\t" << m_medium << std::endl;
+	m_far = FuzzyLogic::Grade(enemyDist, 50, 70);
+	std::cout << "Far:\t" << m_far << std::endl;
+
+
+	double low =
+		FuzzyLogic::OR(
+			FuzzyLogic::OR(
+				FuzzyLogic::AND(m_medium, m_tiny),
+				FuzzyLogic::AND(m_medium, m_small)
+			),
+			FuzzyLogic::AND(m_far, FuzzyLogic::NOT(m_large))
+		);
+
+	double medium =
+		FuzzyLogic::OR(
+			FuzzyLogic::OR(
+				FuzzyLogic::AND(m_close, m_tiny),
+				FuzzyLogic::AND(m_medium, m_moderate)
+			),
+			FuzzyLogic::AND(m_far, m_large)
+		);
+
+	double high =
+		FuzzyLogic::OR(
+			FuzzyLogic::AND(m_close, FuzzyLogic::NOT(m_tiny)),
+			FuzzyLogic::AND(m_medium, m_large)
+		);
+
+	std::cout << "########################" << std::endl;
+	std::cout << "\tFuzzied values" << std::endl;
+	std::cout << "Low\t" << low << std::endl;
+	std::cout << "Med\t" << medium << std::endl;
+	std::cout << "High\t" << high << std::endl;
+	std::cout << "########################" << std::endl;
+
+	int deploy = std::ceil(low * 10 + medium * 30 + high * 50) / (low + medium + high);
+	std::cout << "Deploying units: " << deploy << std::endl;
+
+	return deploy;
 }
